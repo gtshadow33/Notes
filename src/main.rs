@@ -1,9 +1,9 @@
 use gtk::prelude::*;
 use gtk::{
-    Application, ApplicationWindow, Box as GtkBox, Button,
-    FileChooserAction, FileChooserNative, Orientation,
-    ResponseType, ScrolledWindow, TextView,
+    Application, ApplicationWindow, Box as GtkBox, Button, FileChooserAction, FileChooserNative,
+    Orientation, ResponseType, ScrolledWindow, TextView,
 };
+use std::cell::RefCell;
 use std::fs;
 use std::rc::Rc;
 
@@ -29,36 +29,45 @@ fn main() {
             .build();
 
         let open_button = Button::with_label("Abrir");
+        let save_button_as = Button::with_label("Guardar como");
         let save_button = Button::with_label("Guardar");
 
         let hbox = GtkBox::new(Orientation::Horizontal, 5);
         hbox.append(&open_button);
+        hbox.append(&save_button_as);
         hbox.append(&save_button);
 
         vbox.append(&hbox);
         vbox.append(&scrolled);
         window.set_child(Some(&vbox));
 
+        // Variables compartidas
         let text_buffer = Rc::new(text_buffer);
+        let current_path = Rc::new(RefCell::new(None));
 
         // Botón "Abrir"
         {
+            let current_path = current_path.clone();
             let text_buffer = text_buffer.clone();
             let window = window.clone();
+
             open_button.connect_clicked(move |_| {
-                let dialog = Rc::new(FileChooserNative::new(
+                let dialog = FileChooserNative::new(
                     Some("Abrir archivo"),
                     Some(&window),
                     FileChooserAction::Open,
                     Some("Abrir"),
                     Some("Cancelar"),
-                ));
+                );
 
                 let tb = text_buffer.clone();
+                let cp = current_path.clone();
+
                 dialog.connect_response(move |d, response| {
                     if response == ResponseType::Accept {
                         if let Some(file) = d.file() {
                             if let Some(path) = file.path() {
+                                *cp.borrow_mut() = Some(path.clone());
                                 if let Ok(content) = fs::read_to_string(path) {
                                     tb.set_text(&content);
                                 }
@@ -71,35 +80,60 @@ fn main() {
             });
         }
 
-        // Botón "Guardar"
+        // Botón "Guardar como"
         {
             let text_buffer = text_buffer.clone();
+            let current_path = current_path.clone();
             let window = window.clone();
-            save_button.connect_clicked(move |_| {
-                let dialog = Rc::new(FileChooserNative::new(
+
+            save_button_as.connect_clicked(move |_| {
+                let dialog = FileChooserNative::new(
                     Some("Guardar archivo"),
                     Some(&window),
                     FileChooserAction::Save,
                     Some("Guardar"),
                     Some("Cancelar"),
-                ));
+                );
 
                 let tb = text_buffer.clone();
+                let cp = current_path.clone();
+
                 dialog.connect_response(move |d, response| {
                     if response == ResponseType::Accept {
                         if let Some(file) = d.file() {
                             if let Some(path) = file.path() {
+                                *cp.borrow_mut() = Some(path.clone());
                                 let start = tb.start_iter();
                                 let end = tb.end_iter();
                                 let text = tb.text(&start, &end, false);
-                                let _ = fs::write(path, text.as_str());
+                                if let Err(err) = fs::write(path, text.as_str()) {
+                                    eprintln!("Error al guardar: {}", err);
+                                }
                             }
                         }
                     }
-                   
                 });
 
                 dialog.show();
+            });
+        }
+
+        // Botón "Guardar"
+        {
+            let current_path = current_path.clone();
+            let text_buffer = text_buffer.clone();
+
+            save_button.connect_clicked(move |_| {
+                if let Some(ref path) = *current_path.borrow() {
+                    let start = text_buffer.start_iter();
+                    let end = text_buffer.end_iter();
+                    let text = text_buffer.text(&start, &end, false);
+                    if let Err(err) = fs::write(path, text.as_str()) {
+                        eprintln!("Error al guardar el archivo: {}", err);
+                    }
+                } else {
+                    eprintln!("No hay archivo seleccionado. Usa 'Guardar como'.");
+                }
             });
         }
 
