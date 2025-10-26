@@ -1,7 +1,7 @@
 use gtk::prelude::*;
 use gtk::{
     Application, ApplicationWindow, Box as GtkBox, Button, FileChooserAction, FileChooserNative,
-    Orientation, ResponseType, ScrolledWindow, TextView,
+    Orientation, ResponseType, ScrolledWindow, TextView, Label, Dialog,
 };
 use std::cell::RefCell;
 use std::fs;
@@ -45,7 +45,7 @@ fn main() {
         let text_buffer = Rc::new(text_buffer);
         let current_path = Rc::new(RefCell::new(None));
 
-        // Botón "Abrir"
+        // --- Botón "Abrir" ---
         {
             let current_path = current_path.clone();
             let text_buffer = text_buffer.clone();
@@ -80,7 +80,7 @@ fn main() {
             });
         }
 
-        // Botón "Guardar como"
+        // --- Botón "Guardar como" ---
         {
             let text_buffer = text_buffer.clone();
             let current_path = current_path.clone();
@@ -118,13 +118,15 @@ fn main() {
             });
         }
 
-        // Botón "Guardar"
+        // --- Botón "Guardar" ---
         {
             let current_path = current_path.clone();
             let text_buffer = text_buffer.clone();
+            let window = window.clone();
 
             save_button.connect_clicked(move |_| {
                 if let Some(ref path) = *current_path.borrow() {
+                    // Guardar directamente
                     let start = text_buffer.start_iter();
                     let end = text_buffer.end_iter();
                     let text = text_buffer.text(&start, &end, false);
@@ -132,7 +134,26 @@ fn main() {
                         eprintln!("Error al guardar el archivo: {}", err);
                     }
                 } else {
-                    eprintln!("No hay archivo seleccionado. Usa 'Guardar como'.");
+                    // Mostrar ventana emergente
+                    let dialog = Dialog::builder()
+                        .transient_for(&window)
+                        .modal(true)
+                        .title("Sin archivo")
+                        .build();
+
+                    let content = dialog.content_area();
+                    let label = Label::new(Some(
+                        "Usa 'Guardar como' para elegir un destino.",
+                    ));
+                    content.append(&label);
+
+                    dialog.add_button("Cerrar", ResponseType::Close);
+
+                    dialog.connect_response(|d, _resp| {
+                        d.close();
+                    });
+
+                    dialog.present();
                 }
             });
         }
