@@ -14,16 +14,11 @@ Save a new file with "Save As".
 
 Simple and lightweight GTK interface.
 
-Screenshot
-
 <img width="600" height="439" alt="Captura desde 2025-10-27 21-01-21" src="https://github.com/user-attachments/assets/36ffb39d-51dc-4055-9e55-507b45cc047e" />
 
 
-Installation
 Requirements
 
 Rust (latest stable version recommended)
 
 GTK 4 development libraries
-
-On Ubuntu/Debian
