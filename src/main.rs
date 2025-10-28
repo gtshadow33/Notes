@@ -135,21 +135,21 @@ fn main() {
                     }
                 } else {
                     // Mostrar ventana emergente
-                    let aviso = Dialog::builder()
+                    let warring = Dialog::builder()
                         .transient_for(&window)
                         .modal(true)
                         .title("Sin archivo")
                         .build();
 
-                    let content = aviso.content_area();
+                    let content = warring.content_area();
                     let label = Label::new(Some(
                         "Usa 'Guardar como' para elegir un destino.",
                     ));
                     content.append(&label);
 
-                    dialog.add_button("Cerrar", ResponseType::Close);
+                    warring.add_button("Cerrar", ResponseType::Close);
 
-                    dialog.connect_response(|d, _resp| {
+                    warring.connect_response(|d, _resp| {
                         d.close();
                     });
 
