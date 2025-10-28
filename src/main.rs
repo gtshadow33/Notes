@@ -153,7 +153,7 @@ fn main() {
                         d.close();
                     });
 
-                    dialog.present();
+                    warring.present();
                 }
             });
         }
